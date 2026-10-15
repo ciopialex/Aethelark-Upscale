@@ -436,8 +436,23 @@ def main():
         out_dir.mkdir(parents=True, exist_ok=True)
 
         valid_exts = {".png", ".jpg", ".jpeg", ".webp"}
-        files = [f for f in input_path.iterdir() if f.suffix.lower() in valid_exts and "_300dpi_master" not in f.name]
-        print(f"Processing directory: {input_path} ({len(files)} image files found)")
+        files = []
+        for f in sorted(input_path.iterdir()):
+            if f.suffix.lower() not in valid_exts:
+                continue
+            if "_300dpi_master" in f.name or f.name.endswith("_upscaled.png"):
+                continue
+            try:
+                with Image.open(f) as img:
+                    dpi = img.info.get("dpi")
+                    if dpi and dpi[0] >= args.dpi and dpi[1] >= args.dpi:
+                        print(f"  ⏭️ Skipping {f.name} (already {dpi[0]:.0f} DPI)")
+                        continue
+            except Exception:
+                pass
+            files.append(f)
+
+        print(f"Processing directory: {input_path} ({len(files)} images under {args.dpi} DPI found)")
 
         for f in sorted(files):
             out_p = out_dir / f"{f.stem}_300dpi_master.png"
