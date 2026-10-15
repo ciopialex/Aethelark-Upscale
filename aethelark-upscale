@@ -7,10 +7,8 @@ Copyright (c) 2026 Alexandru Cioponea (Aethelark)
 Licensed under the Aethelark Source-Available License v1.0
 https://github.com/ciopialex/Aethelark-Upscale
 
-Cross-Platform Support:
-- Linux (x86_64, Vulkan)
-- macOS (Intel & Apple Silicon via MoltenVK)
-- Windows (x64, DirectX/Vulkan)
+Default Mode: ORGANIC OPTICAL (Lanczos-4, 100% natural, zero AI hallucinations)
+Neural Mode: Activated via --neural or -n <model_name>
 """
 
 import argparse
@@ -220,7 +218,7 @@ def upscale_single_image(
         print(f"  ⚠️ WARNING: Current resolution fails print preflight (< 250 DPI)!")
 
     if organic:
-        print(f"\n  🌱 Mode: ORGANIC OPTICAL (Lanczos4 Resampling)")
+        print(f"\n  🌱 Mode: ORGANIC OPTICAL (Lanczos4 Resampling) [DEFAULT]")
         print(f"     Preserving 100% of the natural photographic softness, zero AI squiggles...")
         target_w = orig_w * scale
         target_h = orig_h * scale
@@ -228,7 +226,7 @@ def upscale_single_image(
     else:
         if not REALESRGAN_BIN.exists():
             print(f"  ⚠️ Neural binary not found at {REALESRGAN_BIN}.", file=sys.stderr)
-            print(f"     Run install script or use `--organic` mode.", file=sys.stderr)
+            print(f"     Run install script or omit neural flags to use default Organic mode.", file=sys.stderr)
             raise RuntimeError(f"Real-ESRGAN binary missing: {REALESRGAN_BIN}")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -301,26 +299,32 @@ def upscale_single_image(
 def main():
     parser = argparse.ArgumentParser(
         prog="aethelark-upscale",
-        description="Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine (Linux, macOS, Windows)",
+        description="Aethelark-Upscale: 300 DPI Print & Image Super-Resolution Engine (Defaults to Organic Lanczos4)",
         epilog="Created by Alexandru Cioponea (Aethelark) | https://github.com/ciopialex/Aethelark-Upscale"
     )
     parser.add_argument("input", help="Path to input image or directory")
     parser.add_argument("-o", "--output", help="Output file or directory path")
     parser.add_argument(
         "-n", "--model",
-        default="nmkd",
-        help="Super-resolution neural model: nmkd (default), ultrasharp, siax, nomos, esrgan, anime"
+        default=None,
+        help="Neural model: nmkd, ultrasharp, siax, nomos, esrgan, anime (Passing this activates neural mode)"
+    )
+    parser.add_argument(
+        "--neural",
+        action="store_true",
+        help="Force Neural Super-Resolution (defaults to nmkd or model specified by -n)"
     )
     parser.add_argument(
         "--organic", "--natural",
         dest="organic",
         action="store_true",
-        help="Use Optical Lanczos4 interpolation (preserves natural photographic softness, ZERO AI squiggles/hallucinations)"
+        default=False,
+        help="Use Optical Lanczos4 mode (DEFAULT: preserves natural photographic softness, zero AI squiggles)"
     )
     parser.add_argument(
         "--style",
         choices=["photo", "realistic", "graphic", "anime", "vector", "logo"],
-        help="Shorthand for model selection: 'graphic'/'vector'/'logo' -> anime, 'photo'/'realistic' -> nmkd"
+        help="Shorthand for neural model selection: 'graphic'/'vector'/'logo' -> anime, 'photo'/'realistic' -> nmkd"
     )
     parser.add_argument(
         "-s", "--scale",
@@ -344,7 +348,7 @@ def main():
     parser.add_argument(
         "--raw",
         action="store_true",
-        help="Disable Clean Polish (pure neural upscale only)"
+        help="Disable Clean Polish (pure upscale only)"
     )
     parser.add_argument(
         "--sharpness",
@@ -372,13 +376,21 @@ def main():
 
     args = parser.parse_args()
 
-    raw_model = args.model.lower()
-    if args.style in ["graphic", "anime", "vector", "logo"]:
-        model_name = MODEL_MAP["anime"]
-    elif args.style in ["photo", "realistic"]:
-        model_name = MODEL_MAP["nmkd"]
+    # Determine execution mode:
+    # DEFAULT is ORGANIC unless neural is explicitly requested via --neural, -n/--model, or --style
+    is_neural = args.neural or (args.model is not None) or (args.style is not None)
+    organic_mode = not is_neural
+
+    if is_neural:
+        raw_model = (args.model or "nmkd").lower()
+        if args.style in ["graphic", "anime", "vector", "logo"]:
+            model_name = MODEL_MAP["anime"]
+        elif args.style in ["photo", "realistic"]:
+            model_name = MODEL_MAP["nmkd"]
+        else:
+            model_name = MODEL_MAP.get(raw_model, raw_model)
     else:
-        model_name = MODEL_MAP.get(raw_model, args.model)
+        model_name = "organic"
 
     polish = not args.raw
 
@@ -410,7 +422,7 @@ def main():
             model_name=model_name,
             scale=args.scale,
             alpha_threshold=args.alpha_threshold,
-            organic=args.organic,
+            organic=organic_mode,
             polish=polish,
             sharpness=args.sharpness,
             specular=args.specular,
@@ -436,7 +448,7 @@ def main():
                     model_name=model_name,
                     scale=args.scale,
                     alpha_threshold=args.alpha_threshold,
-                    organic=args.organic,
+                    organic=organic_mode,
                     polish=polish,
                     sharpness=args.sharpness,
                     specular=args.specular,

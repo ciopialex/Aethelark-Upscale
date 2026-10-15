@@ -2,92 +2,86 @@
 name: aethelark-upscale
 description: >-
   Upscale brand images to 300 DPI print-ready masters using the Aethelark
-  upscale pipeline (Real-ESRGAN neural models or organic optical Lanczos4).
+  upscale pipeline (Organic optical Lanczos4 by default, or Real-ESRGAN neural models).
   Use when the user says "Aethelark-Upscale", "brand upscale", "upscale for
   print", "300 DPI upscale", "merch upscale", "DTG upscale", "upscale these
-  images", "make print ready", or asks to prepare images for POD/DTG/Printify/
-  Printful/Amazon Merch. Also use when the user mentions low DPI warnings,
-  print quality issues, or wants to batch-upscale a folder of designs.
+  images", "make print ready", "upscale before webp", or asks to prepare images
+  for POD/DTG/Printify/Printful/Amazon Merch/Websites. Also use when preparing
+  AI-generated assets for websites or merchandise.
 ---
 
 # Aethelark-Upscale Skill
 
 ## Quick Reference
 
-The CLI tool `brand-upscale` is already installed at `~/.local/bin/merch-upscale`
+The CLI tool `aethelark-upscale` is installed at `~/.local/bin/aethelark-upscale`
 with symlinks: `brand-upscale`, `dtg-upscale`, `merch-upscale`.
 
-GPU backend: Real-ESRGAN ncnn-vulkan on NVIDIA RTX 2050 (4 GB VRAM).
-Models directory: `~/.local/share/aethelark/realesrgan/models/`
+Engine:
+- **Default Mode**: Organic Optical (Lanczos4). 100% authentic photographic softness, zero AI wave/plastic artifacts, 300 DPI physical print compliance.
+- **Neural Mode**: Hardware-accelerated Vulkan super-resolution (NMKD, UltraSharp, Anime) via `-n <model>` or `--neural`.
 
 ## Default Behavior
 
-**Always default to `--organic` mode** unless the user explicitly requests a
-neural model. Organic mode preserves the authentic photographic softness of
-AI-generated images without introducing GAN hallucinations (waves, wax, plastic).
+**`aethelark-upscale` defaults to ORGANIC mode automatically without any flags.**
+It smoothly scales images 4×, purges white ink ghost alpha halos, stamps 300 DPI metadata, and embeds the sRGB IEC61966-2.1 ICC profile.
 
-## Usage Patterns
+## Common Agent Usage Patterns
 
-### Single Image
-
+### 1. Single Image (Default Organic)
 ```bash
-brand-upscale <path-to-image> --organic
+aethelark-upscale <path-to-image>
 ```
 
-### Batch (Entire Folder)
-
+### 2. Batch Process an Entire Folder
 ```bash
-brand-upscale <path-to-folder> --organic
+aethelark-upscale <path-to-folder>
 ```
 
-### With Merch Canvas (4500×5400 POD template)
-
+### 3. Website Asset Pipeline (Upscale -> WebP)
+When the user asks to upscale images before turning them into webp for websites:
 ```bash
-brand-upscale <path> --organic --merch
+# Step 1: Upscale folder (produces polished 4x masters with clean alpha & continuous tone)
+aethelark-upscale ./raw_assets/
+
+# Step 2: Convert masters to lightweight WebP (e.g. via Python or cwebp)
+python3 -c "
+from PIL import Image
+from pathlib import Path
+for p in Path('./raw_assets/polished_300dpi_masters').glob('*.png'):
+    img = Image.open(p)
+    out_webp = p.parent.parent / f'{p.stem.replace(\"_300dpi_master\", \"\")}.webp'
+    img.save(out_webp, 'WEBP', quality=85, method=6)
+    print(f'Saved webp: {out_webp}')
+"
 ```
 
-### Neural Mode (only if user explicitly asks for "sharp", "crisp", "neural")
-
+### 4. Print-on-Demand Apparel Master (4500×5400 Canvas)
 ```bash
-brand-upscale <path> -n nmkd          # Ultra-sharp (NMKD Superscale)
-brand-upscale <path> -n ultrasharp    # High-def sharp
-brand-upscale <path> -n nomos         # Natural photo
-brand-upscale <path> -n anime         # Flat art / vector / logo
-brand-upscale <path> -n esrgan        # Classic Real-ESRGAN
+aethelark-upscale <path> --merch
 ```
 
-## Step-by-Step Execution
+### 5. Neural Mode (Only when user explicitly asks for "sharp", "crisp", "neural", or "anime")
+```bash
+aethelark-upscale <path> -n nmkd          # Ultra-sharp mechanical / tech art
+aethelark-upscale <path> -n ultrasharp    # High-def sharp realism
+aethelark-upscale <path> -n anime         # Flat art / vector / logo
+aethelark-upscale <path> -n nomos         # Filmic photo texture
+```
+
+## Step-by-Step Execution for Agents
 
 1. **Identify the target**: Resolve the path the user mentioned (file or folder).
-2. **Choose the mode**:
-   - Default → `--organic` (preserves natural look, zero AI artifacts)
-   - User says "sharp" / "crisp" / "neural" / "NMKD" → use `-n <model>`
-   - User says "anime" / "vector" / "logo" / "graphic" → use `-n anime`
-3. **Add flags if mentioned**:
-   - "merch" / "POD" / "shirt" / "canvas" → add `--merch`
-   - Custom canvas → `--canvas WIDTHxHEIGHT`
-   - Custom DPI → `--dpi <N>`
-4. **Run the command** via shell.
-5. **Report results**: Show the output path(s), final resolution, DPI, and
-   print dimensions. If a folder was processed, list all processed files.
+2. **Determine mode**:
+   - Default → Naked call (`aethelark-upscale <path>`). This runs Organic mode automatically.
+   - User explicitly requests "neural", "sharp", or "NMKD" → Pass `-n nmkd` or `--neural`.
+   - User requests "logo", "vector", or "anime" → Pass `-n anime`.
+3. **Check for merch/canvas requirements**:
+   - T-shirt / POD canvas needed → Add `--merch`.
+4. **Execute command via shell**.
+5. **Report results**: Output path(s), final resolution, DPI, and print/web readiness.
 
 ## Output Convention
 
-- Single file: `<original_stem>_300dpi_master.png` in the same directory
-- Folder: `<folder>/polished_300dpi_masters/` subdirectory
-
-## What It Does (for context)
-
-- 4× resolution upscale (organic optical OR neural super-resolution)
-- Alpha halo purge (eliminates white DTG underbase ghost fringing)
-- sRGB IEC61966-2.1 ICC profile embedding
-- 300 DPI pHYs metadata stamping
-- Optional 4500×5400 master merch canvas centering
-
-## Troubleshooting
-
-- If `brand-upscale` is not found: check `~/.local/bin` is in PATH
-- If GPU fails: the binary needs `realesrgan-ncnn-vulkan` with Vulkan drivers
-- If a model is missing: check `~/.local/share/aethelark/realesrgan/models/`
-
-For full CLI reference, see [cli-reference.md](./references/cli-reference.md).
+- Single file: `<original_stem>_300dpi_master.png` in the same directory.
+- Folder: `<folder>/polished_300dpi_masters/` subdirectory.

@@ -6,8 +6,8 @@
 
 [![License: Aethelark Source-Available](https://img.shields.io/badge/License-Aethelark%20v1.0-blue.svg)](LICENSE)
 [![Platform: Linux · macOS · Windows](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-orange.svg)](#-cross-platform-support)
-[![GPU: Hardware Accelerated](https://img.shields.io/badge/GPU-Vulkan%20Accelerated-green.svg)](#-what-is-aethelark-upscale)
-[![Print: 300 DPI DTG Ready](https://img.shields.io/badge/Print-300%20DPI%20DTG%20Ready-brightgreen.svg)](#-step-3-upload-to-your-store)
+[![Default: Organic Mode](https://img.shields.io/badge/Default-Organic%20Lanczos4-brightgreen.svg)](#-non-nerd-guide-organic-vs-neural-which-one-should-you-use)
+[![Print: 300 DPI DTG Ready](https://img.shields.io/badge/Print-300%20DPI%20DTG%20Ready-green.svg)](#-step-3-upload-to-your-store)
 [![Agent: Claude & Gemini Native](https://img.shields.io/badge/AI%20Agent-Claude%20%7C%20Gemini%20Native-purple.svg)](#-for-ai-agents)
 
 ---
@@ -40,17 +40,19 @@ irm https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.p
 
 ### Step 2: Upscale Your Image
 
-Type `aethelark-upscale --organic ` and **drag & drop your image file into the terminal window**:
+Type `aethelark-upscale ` and **drag & drop your image file into the terminal window**:
 
 ```bash
-aethelark-upscale --organic [drag-and-drop-your-image-here]
+aethelark-upscale [drag-and-drop-your-image-here]
 ```
 
+> 💡 **Default is Organic**: You don't need any complex flags! By default, Aethelark-Upscale automatically uses **Organic Mode**—keeping your pictures natural, smooth, and ripple-free.
+>
 > 💡 **Drag & Drop Trick**: You do NOT need to type long file paths! Just drag your image directly from your folder or desktop and drop it right into the terminal window—it will type the path for you automatically.
 
 Want to upscale a **whole folder of images at once**? Just drag the whole folder:
 ```bash
-aethelark-upscale --organic [drag-and-drop-folder-here]
+aethelark-upscale [drag-and-drop-folder-here]
 ```
 
 ---
@@ -62,19 +64,42 @@ Your finished master will be saved right next to your original file, named `[you
 - **4× Bigger Resolution**: A 1000px image instantly becomes a 4000px ultra-high-res master.
 - **100% Green Checkmarks**: Embedded with physical 300 DPI metadata so Printify, Printful, and Amazon Merch accept it immediately.
 - **No Ugly White Outlines**: Automatically purges transparent ghost pixels so black t-shirts and hoodies don't print with a weird chalky halo around your art.
-- **Natural Photographic Look (`--organic`)**: Keeps the natural lens blur and smooth shading of your original design without turning it into artificial, waxy "AI plastic".
+- **Natural Photographic Look**: Keeps the natural lens blur and smooth shading of your original design without turning it into artificial, waxy "AI plastic".
 
 ---
 
-## ⚡ What is Aethelark-Upscale?
+## 🧠 Non-Nerd Guide: Organic vs. Neural (Which one should you use?)
 
-**Aethelark-Upscale** is a high-performance, local image upscaler built specifically for **autonomous AI agents** (Claude Code, Gemini CLI, Cursor, Copilot, OpenDevin) and **human creators**.
+If you're not an engineer, think of the two modes like this:
 
-Most upscalers are either bloated GUI apps, locked behind paid API subscriptions, or produce synthetic "AI slop" (uncanny plastic textures, waxy skin, and squiggly GAN wave hallucinations on smooth surfaces).
+### 1. 🤖 Neural (AI Mode)
+* **What it does**: An AI tries to **"guess and redraw"** details it thinks are missing from your picture.
+* **The Catch**: The AI is like an over-eager artist with a Sharpie—it assumes *everything* should be razor-sharp. When it sees smooth skin, metal plates, or soft shadows, it panics and invents weird fake textures—often creating **wavy squiggly worms** or a cheap "plastic CGI" look.
+* **When to use**: Cartoons, anime, text, or tiny vector logos where you want hard sticker edges (`aethelark-upscale logo.png -n anime`).
 
-Aethelark-Upscale solves this with a **dual-engine architecture**:
-1. **🌱 Organic Optical Mode (`--organic`)**: Uses 4x high-order Lanczos-4 sinc interpolation to scale images to true 300 DPI print scale while **preserving 100% of the authentic photographic softness, depth-of-field, and camera glass aesthetics**—zero AI hallucinations, zero plastic wax, zero squiggly ripples.
-2. **⚡ Neural Super-Resolution (`-n nmkd` / `ultrasharp` / `anime`)**: Direct Vulkan GPU hardware inference for razor-sharp mechanical edges, micro-trace clarity, and flat-art/vector reconstruction.
+### 2. 🌱 Organic Mode (The Default)
+* **What it does**: Acts like a **high-end camera magnifying glass**. It does NOT guess, invent, or draw anything fake.
+* **Why it looks better**: It simply makes your image 4× bigger while keeping all the smooth gradients, authentic lens blur, and natural shadows intact.
+* **When to use**: **95% of everything**—clothing designs, AI artwork (Midjourney/ChatGPT), 3D renders, photos, and web images.
+
+---
+
+### 🌐 Why upscale before converting to WebP for websites?
+
+* **The Problem**: A raw AI-generated image (often 1000px wide) might look okay on a small phone, but on a MacBook Retina screen or 4K monitor, web browsers stretch it out and it looks **blurry, pixelated, and cheap**.
+* **The Solution**:
+  1. Aethelark-Upscale makes your graphic **huge and crystal clear** (4,000px wide) with smooth continuous tone and zero plastic artifacts.
+  2. WebP compression then takes that giant master and shrinks the file size down to a tiny footprint (like 150 KB) that **loads in milliseconds**.
+* **The Result**: Your website gets images that look like expensive studio photography, load instantly, and don't trigger the "cheap AI" vibe.
+
+---
+
+## ⚡ Technical Architecture
+
+Aethelark-Upscale provides a **dual-engine architecture** with an automated print preflight pipeline:
+
+1. **🌱 Organic Optical Mode (Default)**: Uses 4x high-order Lanczos-4 sinc interpolation to scale images to true 300 DPI print scale while **preserving 100% of the authentic photographic softness, depth-of-field, and camera glass aesthetics**—zero AI hallucinations, zero plastic wax, zero squiggly ripples.
+2. **⚡ Neural Super-Resolution (`-n nmkd` / `ultrasharp` / `anime` / `--neural`)**: Direct Vulkan GPU hardware inference for razor-sharp mechanical edges, micro-trace clarity, and flat-art/vector reconstruction.
 
 Both modes automatically run through the **Aethelark Print Preflight Pipeline**:
 - **Alpha Halo Purge**: Clamps faint edge transparency ($0 < \alpha \le 4 \to 0$) and zeroes RGB values under transparent pixels. Eliminates the dreaded chalky white ink underbase ghost outline that ruins Direct-to-Garment (DTG) prints on black garments.
@@ -114,14 +139,14 @@ cp -r skill/ ~/.gemini/config/skills/aethelark-upscale/
 
 Once installed, simply say to your agent:
 - *"Apply the Aethelark-Upscale to all the images in that folder"*
-- *"Aethelark-Upscale this image for print"*
+- *"Aethelark-Upscale this image before turning into webp for our website"*
 - *"Upscale ~/designs/ to 300 DPI for Printify"*
-- *"Batch upscale my brand assets using organic mode"*
+- *"Batch upscale my brand assets"*
 
 The agent will read [`skill/SKILL.md`](skill/SKILL.md) and execute:
 
 ```bash
-aethelark-upscale <path> --organic
+aethelark-upscale <path>
 ```
 
 All processed images will be saved with full 300 DPI print metadata in:
@@ -135,7 +160,7 @@ All processed images will be saved with full 300 DPI print metadata in:
 Centers the graphic onto the universal master print canvas used by Printify, Printful, and Amazon Merch:
 
 ```bash
-aethelark-upscale logo.png --organic --merch
+aethelark-upscale logo.png --merch
 ```
 
 ### Neural Super-Resolution (For Mechanical, Tech & Vector Art)
@@ -158,7 +183,7 @@ aethelark-upscale emblem.png -n anime
 
 | Model Alias | Engine | Best For | Characteristics |
 | :--- | :--- | :--- | :--- |
-| `--organic` | Lanczos-4 Optical | AI Art, Photos, Apparel | **Zero AI artifacts**, preserves authentic optical lens softness, 300 DPI |
+| **Default** (`--organic`) | Lanczos-4 Optical | AI Art, Photos, Apparel, Websites | **Zero AI artifacts**, preserves authentic optical lens softness, 300 DPI |
 | `nmkd` | 4x_NMKD-Superscale | Hardware, Tech, Crisp Renders | Maximum edge contrast (+90% sharpness), structural line pop |
 | `ultrasharp` | 4x-UltraSharp | Mixed Artwork, Merchandise | Balanced clarity, clean denoising, rich micro-contrast |
 | `siax` | 4x_NMKD-Siax | Real Photography | Gentle skin tones, natural organic textures |
@@ -170,7 +195,7 @@ aethelark-upscale emblem.png -n anime
 ## ⚙️ Full CLI Options Reference
 
 ```
-usage: aethelark-upscale [-h] [-o OUTPUT] [-n MODEL] [--organic]
+usage: aethelark-upscale [-h] [-o OUTPUT] [-n MODEL] [--neural] [--organic]
                          [--style {photo,realistic,graphic,anime,vector,logo}]
                          [-s {2,3,4}] [--dpi DPI]
                          [--alpha-threshold ALPHA_THRESHOLD] [--raw]
@@ -183,8 +208,9 @@ Positional Arguments:
 
 Optional Arguments:
   -o, --output           Output destination file or directory path
-  -n, --model            Neural model: nmkd (default), ultrasharp, siax, nomos, esrgan, anime
-  --organic, --natural   Use Optical Lanczos4 mode (preserves natural photographic softness)
+  -n, --model            Neural model: nmkd, ultrasharp, siax, nomos, esrgan, anime (activates neural)
+  --neural               Force Neural Super-Resolution (defaults to nmkd or model specified by -n)
+  --organic, --natural   Use Optical Lanczos4 mode (DEFAULT: preserves natural photographic softness)
   --style                Shorthand: 'graphic'/'vector'/'logo' -> anime; 'photo' -> nmkd
   -s, --scale            Upscaling factor: 2, 3, or 4 (default: 4)
   --dpi                  Target physical DPI stamp (default: 300)
