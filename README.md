@@ -1,14 +1,68 @@
 # 🦅 Aethelark-Upscale
 
 > **The Agent-Native 300 DPI GPU Image Super-Resolution & Print Polish Engine.**  
-> Free for personal use. Runs locally on Linux, macOS, and Windows via Vulkan GPU acceleration.  
+> Free for personal use. Runs locally on Linux, macOS, and Windows via GPU acceleration.  
 > Created by **Alexandru Cioponea (Aethelark)**.
 
 [![License: Aethelark Source-Available](https://img.shields.io/badge/License-Aethelark%20v1.0-blue.svg)](LICENSE)
 [![Platform: Linux · macOS · Windows](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-orange.svg)](#-cross-platform-support)
-[![GPU: Vulkan Hardware Accelerated](https://img.shields.io/badge/GPU-Vulkan%20Accelerated-green.svg)](#features)
-[![Print: 300 DPI DTG Ready](https://img.shields.io/badge/Print-300%20DPI%20DTG%20Ready-brightgreen.svg)](#preflight-engineering)
+[![GPU: Hardware Accelerated](https://img.shields.io/badge/GPU-Vulkan%20Accelerated-green.svg)](#-what-is-aethelark-upscale)
+[![Print: 300 DPI DTG Ready](https://img.shields.io/badge/Print-300%20DPI%20DTG%20Ready-brightgreen.svg)](#-step-3-upload-to-your-store)
 [![Agent: Claude & Gemini Native](https://img.shields.io/badge/AI%20Agent-Claude%20%7C%20Gemini%20Native-purple.svg)](#-for-ai-agents)
+
+---
+
+## 🪄 Quick Start for Non-Technical Users (60 Seconds)
+
+> **Got a "Low Resolution / under 250 DPI" warning on Printify, Printful, or Amazon Merch?**  
+> Want your Midjourney, ChatGPT, or digital art to print razor-sharp without looking like cheap plastic or getting weird wavy distortion?  
+> Follow these 3 easy steps—**no coding experience needed**.
+
+---
+
+### Step 1: Install (Copy & Paste ONE line)
+
+Open your **Terminal** (Mac/Linux) or **PowerShell** (Windows) and paste this:
+
+**🍎 Mac & 🐧 Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.sh | bash
+```
+
+**🪟 Windows (Press Start, type `PowerShell`, and paste):**
+```powershell
+irm https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.ps1 | iex
+```
+
+*(Press Enter and wait ~15 seconds while it sets up everything automatically).*
+
+---
+
+### Step 2: Upscale Your Image
+
+Type `aethelark-upscale --organic ` and **drag & drop your image file into the terminal window**:
+
+```bash
+aethelark-upscale --organic [drag-and-drop-your-image-here]
+```
+
+> 💡 **Drag & Drop Trick**: You do NOT need to type long file paths! Just drag your image directly from your folder or desktop and drop it right into the terminal window—it will type the path for you automatically.
+
+Want to upscale a **whole folder of images at once**? Just drag the whole folder:
+```bash
+aethelark-upscale --organic [drag-and-drop-folder-here]
+```
+
+---
+
+### Step 3: Upload to Your Store!
+
+Your finished master will be saved right next to your original file, named `[your-file]_300dpi_master.png`:
+
+- **4× Bigger Resolution**: A 1000px image instantly becomes a 4000px ultra-high-res master.
+- **100% Green Checkmarks**: Embedded with physical 300 DPI metadata so Printify, Printful, and Amazon Merch accept it immediately.
+- **No Ugly White Outlines**: Automatically purges transparent ghost pixels so black t-shirts and hoodies don't print with a weird chalky halo around your art.
+- **Natural Photographic Look (`--organic`)**: Keeps the natural lens blur and smooth shading of your original design without turning it into artificial, waxy "AI plastic".
 
 ---
 
@@ -27,33 +81,6 @@ Both modes automatically run through the **Aethelark Print Preflight Pipeline**:
 - **300.0 Physical DPI Stamping**: Writes explicit PNG `pHYs` chunks to pass Print-on-Demand (Printify, Printful, Amazon Merch) upload preflights with instant green checkmarks.
 - **sRGB IEC61966-2.1 Color Profile**: Embeds universal ICC profiles to prevent murky CMYK color-shifting in industrial RIP print engines.
 - **Universal Merch Template (`--merch`)**: Automatically centers artwork on the standard 4500×5400 master apparel canvas.
-
----
-
-## 🚀 One-Line Installation
-
-### Linux & macOS
-
-Run in terminal:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.sh | bash
-```
-
-### Windows (PowerShell)
-
-Run in PowerShell:
-
-```powershell
-irm https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.ps1 | iex
-```
-
-The installer will automatically:
-1. Detect your operating system (Linux, macOS Intel/Apple Silicon, or Windows).
-2. Download the appropriate Real-ESRGAN Vulkan engine binary.
-3. Fetch community neural weights (NMKD Superscale, UltraSharp, Siax, Nomos).
-4. Install minimal Python dependencies (`pillow`, `numpy`, `opencv-python-headless`).
-5. Add `aethelark-upscale`, `brand-upscale`, and `merch-upscale` to your system PATH.
 
 ---
 
@@ -102,28 +129,16 @@ All processed images will be saved with full 300 DPI print metadata in:
 
 ---
 
-## 💻 CLI Usage
+## 💻 Power User CLI Options
 
-### 1. Organic Upscale (Recommended for Generative AI & Photos)
-Preserves authentic lens blur, photographic continuous tone, and eliminates AI wave hallucinations:
-
-```bash
-aethelark-upscale my-design.png --organic
-```
-
-### 2. Batch Process an Entire Directory
-```bash
-aethelark-upscale ~/my-brand-assets/ --organic
-```
-
-### 3. Print-on-Demand Apparel Master Canvas (4500×5400)
+### Print-on-Demand Apparel Master Canvas (4500×5400)
 Centers the graphic onto the universal master print canvas used by Printify, Printful, and Amazon Merch:
 
 ```bash
 aethelark-upscale logo.png --organic --merch
 ```
 
-### 4. Neural Super-Resolution (For Mechanical, Tech & Vector Art)
+### Neural Super-Resolution (For Mechanical, Tech & Vector Art)
 When you need maximum crisp edge reconstruction:
 
 ```bash
@@ -152,7 +167,7 @@ aethelark-upscale emblem.png -n anime
 
 ---
 
-## ⚙️ Full CLI Options
+## ⚙️ Full CLI Options Reference
 
 ```
 usage: aethelark-upscale [-h] [-o OUTPUT] [-n MODEL] [--organic]
