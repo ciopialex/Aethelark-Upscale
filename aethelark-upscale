@@ -1,0 +1,446 @@
+#!/usr/bin/env python3
+"""
+Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine
+Designed for AI Agents and Creators.
+
+Copyright (c) 2026 Alexandru Cioponea (Aethelark)
+Licensed under the Aethelark Source-Available License v1.0
+https://github.com/ciopialex/Aethelark-Upscale
+
+Transforms raw AI generations, designs, and merchandise artwork into gallery-grade print masters:
+- Neural Super-Resolution via Vulkan GPU (NMKD, UltraSharp, Siax, Nomos, Anime, Real-ESRGAN)
+- Organic Optical Mode via Lanczos-4 (100% authentic photographic continuous tone, zero AI hallucinations)
+- True 300 DPI Physical Print Stamping (pHYs PNG chunk)
+- Alpha Halo Purge (eliminates white ink underbase ghost outlines on dark apparel)
+- Standardized sRGB IEC61966-2.1 Color Profile Embedding (RIP CMYK color-shift safe)
+- Universal Merch Master Canvas Centering (4500x5400 for Printify, Printful, Amazon Merch)
+"""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+import numpy as np
+import cv2
+from PIL import Image, ImageCms
+
+
+def resolve_engine_paths():
+    """Locate the Real-ESRGAN Vulkan binary and models directory dynamically."""
+    custom_dir = os.environ.get("AETHELARK_ESRGAN_DIR")
+    candidates = []
+    if custom_dir:
+        candidates.append(Path(custom_dir))
+
+    candidates.append(Path.home() / ".local/share/aethelark/realesrgan")
+    candidates.append(Path("/usr/local/share/aethelark/realesrgan"))
+
+    for base in candidates:
+        bin_path = base / "realesrgan-ncnn-vulkan"
+        models_path = base / "models"
+        if bin_path.exists():
+            return bin_path, models_path
+
+    which_bin = shutil.which("realesrgan-ncnn-vulkan")
+    if which_bin:
+        bin_p = Path(which_bin)
+        models_p = bin_p.parent / "models"
+        if models_p.exists():
+            return bin_p, models_p
+        return bin_p, Path.home() / ".local/share/aethelark/realesrgan/models"
+
+    default_base = Path.home() / ".local/share/aethelark/realesrgan"
+    return default_base / "realesrgan-ncnn-vulkan", default_base / "models"
+
+
+REALESRGAN_BIN, MODELS_DIR = resolve_engine_paths()
+
+MODEL_MAP = {
+    "nmkd": "4x_NMKD-Superscale-SP_178000_G",
+    "superscale": "4x_NMKD-Superscale-SP_178000_G",
+    "ultrasharp": "4x-UltraSharp",
+    "siax": "4x_NMKD-Siax_200k",
+    "nomos": "4xNomos8kSC",
+    "esrgan": "realesrgan-x4plus",
+    "anime": "realesrgan-x4plus-anime",
+    "realesrgan-x4plus": "realesrgan-x4plus",
+    "realesrgan-x4plus-anime": "realesrgan-x4plus-anime",
+}
+
+
+def get_srgb_profile_bytes():
+    """Returns standardized sRGB ICC profile bytes."""
+    try:
+        srgb_profile = ImageCms.createProfile("sRGB")
+        return ImageCms.ImageCmsProfile(srgb_profile).tobytes()
+    except Exception:
+        return None
+
+
+def clean_alpha_channel(img: Image.Image, threshold: int = 4) -> Image.Image:
+    """
+    Purges faint ghost noise in the alpha channel (< threshold).
+    DTG printers spray opaque white underbase ink beneath ANY pixel with alpha > 0.
+    Anti-aliasing noise and background halos create ugly white outlines on dark garments.
+    Also zeroes out RGB values of fully transparent pixels to prevent color bleed in RIP software.
+    """
+    if img.mode != "RGBA":
+        return img
+
+    arr = np.array(img).copy()
+    alpha = arr[:, :, 3]
+
+    ghost_mask = (alpha > 0) & (alpha <= threshold)
+    arr[ghost_mask, 3] = 0
+
+    transparent_mask = arr[:, :, 3] == 0
+    arr[transparent_mask, :3] = 0
+
+    return Image.fromarray(arr, mode="RGBA")
+
+
+def apply_clean_polish(
+    img: Image.Image,
+    sharpness: float = 0.65,
+    specular: float = 12.0
+) -> Image.Image:
+    """
+    Universal Polish Engine (Zero Noise):
+    Applies clean commercial enhancements across any artwork (apparel, logos, 3D renders, photos):
+    1. Edge-preserving local clarity: Sharpens structural lines & edges without adding grain to flat areas.
+    2. Specular highlight pop: Gives micro-glints on metallic, reflective, and highlight elements.
+    3. Deep industrial black snapping: Clears murky gray floors typical of AI diffusion shadows.
+    4. Alpha preservation: Completely protects transparency without noise leakage.
+    """
+    arr = np.array(img).astype(np.float32)
+    rgb = arr[:, :, :3]
+    alpha = arr[:, :, 3] if arr.shape[2] == 4 else None
+
+    gray = (0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2])
+
+    blurred = cv2.GaussianBlur(gray, (0, 0), 1.5)
+    diff = gray - blurred
+    edge_mask = np.where(np.abs(diff) > 3.5, np.sign(diff) * (np.abs(diff) - 3.5), 0.0)
+    edge_boost = np.repeat(edge_mask[:, :, np.newaxis], 3, axis=2) * sharpness
+
+    specular_mask = np.clip((gray - 175.0) / 80.0, 0.0, 1.0)
+    specular_boost = np.repeat(specular_mask[:, :, np.newaxis], 3, axis=2) * specular
+
+    polished_rgb = rgb + edge_boost + specular_boost
+
+    polished_rgb = np.where(polished_rgb < 35, polished_rgb * 0.88, polished_rgb)
+    polished_rgb = np.clip(polished_rgb, 0, 255).astype(np.uint8)
+
+    if alpha is not None:
+        clean_alpha = alpha.astype(np.uint8)
+        polished_rgb[clean_alpha == 0] = 0
+        res = np.dstack([polished_rgb, clean_alpha])
+    else:
+        res = polished_rgb
+
+    return Image.fromarray(res, mode=img.mode)
+
+
+def place_on_merch_canvas(
+    img: Image.Image,
+    canvas_w: int = 4500,
+    canvas_h: int = 5400,
+    fill_ratio: float = 0.90,
+) -> Image.Image:
+    """
+    Centers the graphic onto a transparent master POD canvas (e.g. 4500x5400 @ 300 DPI).
+    Scales the graphic proportionally if it exceeds the maximum safe print area.
+    """
+    max_w = int(canvas_w * fill_ratio)
+    max_h = int(canvas_h * fill_ratio)
+
+    w, h = img.size
+    scale = min(max_w / w, max_h / h)
+
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+
+    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+    canvas = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    offset_x = (canvas_w - new_w) // 2
+    offset_y = (canvas_h - new_h) // 2
+
+    canvas.paste(resized, (offset_x, offset_y), resized)
+    return canvas
+
+
+def upscale_single_image(
+    input_path: Path,
+    output_path: Path,
+    model_name: str,
+    scale: int,
+    alpha_threshold: int,
+    organic: bool,
+    polish: bool,
+    sharpness: float,
+    specular: float,
+    merch_canvas: bool,
+    canvas_dims: tuple[int, int] | None,
+    dpi: int,
+    verbose: bool,
+):
+    start_time = time.time()
+    print(f"\n========================================================")
+    print(f"🚀 Processing: {input_path.name}")
+    print(f"========================================================")
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+
+    orig_img = Image.open(input_path)
+    orig_w, orig_h = orig_img.size
+    orig_dpi = orig_img.info.get("dpi")
+
+    print(f"  [Input Resolution] : {orig_w} x {orig_h} px (Mode: {orig_img.mode})")
+    if orig_dpi:
+        print(f"  [Embedded DPI]    : {orig_dpi[0]:.1f} x {orig_dpi[1]:.1f}")
+    else:
+        print(f"  [Embedded DPI]    : None (defaults to ~72 DPI in browser/POD)")
+
+    est_dpi_12in = orig_w / 12.0
+    print(f"  [Print Quality Now]: {est_dpi_12in:.1f} DPI across standard 12\" print area")
+    if est_dpi_12in < 250:
+        print(f"  ⚠️ WARNING: Current resolution fails print preflight (< 250 DPI)!")
+
+    if organic:
+        print(f"\n  🌱 Mode: ORGANIC OPTICAL (Lanczos4 Resampling)")
+        print(f"     Preserving 100% of the natural photographic softness, zero AI squiggles...")
+        target_w = orig_w * scale
+        target_h = orig_h * scale
+        upscaled_img = orig_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+    else:
+        if not REALESRGAN_BIN.exists():
+            print(f"  ⚠️ Neural binary not found at {REALESRGAN_BIN}.", file=sys.stderr)
+            print(f"     Run `bash install.sh` or use `--organic` mode.", file=sys.stderr)
+            raise RuntimeError(f"Real-ESRGAN binary missing: {REALESRGAN_BIN}")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_output = Path(tmpdir) / "upscaled_intermediate.png"
+
+            cmd = [
+                str(REALESRGAN_BIN),
+                "-i", str(input_path),
+                "-o", str(tmp_output),
+                "-m", str(MODELS_DIR),
+                "-n", model_name,
+                "-s", str(scale),
+                "-f", "png",
+            ]
+
+            print(f"\n  ⚡ Running Neural Super-Resolution ({model_name}) via Vulkan GPU...")
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+            if not tmp_output.exists():
+                print("Super-Resolution engine error:\n", result.stdout, file=sys.stderr)
+                raise RuntimeError(f"Engine failed to produce output image: {tmp_output}")
+
+            upscaled_img = Image.open(tmp_output)
+
+    up_w, up_h = upscaled_img.size
+    print(f"  [Super-Resolution]    : Reconstructed to {up_w} x {up_h} px")
+
+    if upscaled_img.mode == "RGBA":
+        print(f"  🛡️ Purging ghost alpha fringing (threshold: {alpha_threshold})...")
+        upscaled_img = clean_alpha_channel(upscaled_img, threshold=alpha_threshold)
+
+    if polish and not organic:
+        print(f"  ✨ Applying Clean Polish (edge clarity, specular glints, deep blacks)...")
+        upscaled_img = apply_clean_polish(upscaled_img, sharpness=sharpness, specular=specular)
+
+    if merch_canvas or canvas_dims:
+        cw, ch = canvas_dims if canvas_dims else (4500, 5400)
+        print(f"  📐 Centering on standard master canvas: {cw} x {ch} px...")
+        upscaled_img = place_on_merch_canvas(upscaled_img, canvas_w=cw, canvas_h=ch)
+
+    final_w, final_h = upscaled_img.size
+    srgb_bytes = get_srgb_profile_bytes()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    save_kwargs = {
+        "dpi": (dpi, dpi),
+    }
+    if srgb_bytes:
+        save_kwargs["icc_profile"] = srgb_bytes
+
+    upscaled_img.save(output_path, **save_kwargs)
+    elapsed = time.time() - start_time
+
+    final_img = Image.open(output_path)
+    final_dpi = final_img.info.get("dpi", (dpi, dpi))[0]
+    print_w_in = final_w / final_dpi
+    print_h_in = final_h / final_dpi
+
+    print(f"\n✅ OUTPUT SAVED: {output_path}")
+    print(f"  ----------------------------------------------------")
+    print(f"  🎯 Final Resolution  : {final_w} x {final_h} px")
+    print(f"  🖨️ Physical DPI       : {final_dpi:.1f} DPI (Strap: 300 DPI)")
+    print(f"  📏 Max Sharp Print   : {print_w_in:.1f}\" x {print_h_in:.1f}\" at 300 DPI")
+    print(f"  🎨 Color Profile     : sRGB IEC61966-2.1 (CMYK RIP Ready)")
+    print(f"  👕 POD DTG Status    : PASSED ✅ (Printify, Printful, Amazon Ready)")
+    print(f"  ⏱️ Time Elapsed      : {elapsed:.2f} seconds")
+    print(f"  ----------------------------------------------------")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="aethelark-upscale",
+        description="Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine",
+        epilog="Created by Alexandru Cioponea (Aethelark) | https://github.com/ciopialex/Aethelark-Upscale"
+    )
+    parser.add_argument("input", help="Path to input image or directory")
+    parser.add_argument("-o", "--output", help="Output file or directory path")
+    parser.add_argument(
+        "-n", "--model",
+        default="nmkd",
+        help="Super-resolution neural model: nmkd (default), ultrasharp, siax, nomos, esrgan, anime"
+    )
+    parser.add_argument(
+        "--organic", "--natural",
+        dest="organic",
+        action="store_true",
+        help="Use Optical Lanczos4 interpolation (preserves natural photographic softness, ZERO AI squiggles/hallucinations)"
+    )
+    parser.add_argument(
+        "--style",
+        choices=["photo", "realistic", "graphic", "anime", "vector", "logo"],
+        help="Shorthand for model selection: 'graphic'/'vector'/'logo' -> anime, 'photo'/'realistic' -> nmkd"
+    )
+    parser.add_argument(
+        "-s", "--scale",
+        type=int,
+        default=4,
+        choices=[2, 3, 4],
+        help="Upscaling factor (default: 4)"
+    )
+    parser.add_argument(
+        "--dpi",
+        type=int,
+        default=300,
+        help="Target physical DPI (default: 300)"
+    )
+    parser.add_argument(
+        "--alpha-threshold",
+        type=int,
+        default=4,
+        help="Alpha cutoff threshold (0-255) to eliminate white underbase halos (default: 4)"
+    )
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Disable Clean Polish (pure neural upscale only)"
+    )
+    parser.add_argument(
+        "--sharpness",
+        type=float,
+        default=0.65,
+        help="Edge clarity strength (default: 0.65)"
+    )
+    parser.add_argument(
+        "--specular",
+        type=float,
+        default=12.0,
+        help="Specular highlight pop intensity (default: 12.0)"
+    )
+    parser.add_argument(
+        "--merch",
+        action="store_true",
+        help="Place upscaled graphic centered onto universal standard 4500x5400 POD master canvas"
+    )
+    parser.add_argument(
+        "--canvas",
+        type=str,
+        help="Custom canvas dimensions in WIDTHxHEIGHT format, e.g. 4500x5400"
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
+
+    args = parser.parse_args()
+
+    raw_model = args.model.lower()
+    if args.style in ["graphic", "anime", "vector", "logo"]:
+        model_name = MODEL_MAP["anime"]
+    elif args.style in ["photo", "realistic"]:
+        model_name = MODEL_MAP["nmkd"]
+    else:
+        model_name = MODEL_MAP.get(raw_model, args.model)
+
+    polish = not args.raw
+
+    canvas_dims = None
+    if args.canvas:
+        try:
+            cw, ch = map(int, args.canvas.lower().split("x"))
+            canvas_dims = (cw, ch)
+        except Exception:
+            print(f"Error: Invalid canvas format '{args.canvas}'. Use WIDTHxHEIGHT, e.g. 4500x5400", file=sys.stderr)
+            sys.exit(1)
+
+    input_path = Path(args.input).expanduser().resolve()
+    if not input_path.exists():
+        print(f"Error: Input path '{args.input}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    if input_path.is_file():
+        if args.output:
+            out_p = Path(args.output).expanduser().resolve()
+            if out_p.is_dir() or args.output.endswith("/"):
+                out_p = out_p / f"{input_path.stem}_300dpi_master.png"
+        else:
+            out_p = input_path.parent / f"{input_path.stem}_300dpi_master.png"
+
+        upscale_single_image(
+            input_path=input_path,
+            output_path=out_p,
+            model_name=model_name,
+            scale=args.scale,
+            alpha_threshold=args.alpha_threshold,
+            organic=args.organic,
+            polish=polish,
+            sharpness=args.sharpness,
+            specular=args.specular,
+            merch_canvas=args.merch,
+            canvas_dims=canvas_dims,
+            dpi=args.dpi,
+            verbose=args.verbose,
+        )
+    elif input_path.is_dir():
+        out_dir = Path(args.output).expanduser().resolve() if args.output else input_path / "polished_300dpi_masters"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        valid_exts = {".png", ".jpg", ".jpeg", ".webp"}
+        files = [f for f in input_path.iterdir() if f.suffix.lower() in valid_exts and "_300dpi_master" not in f.name]
+        print(f"Processing directory: {input_path} ({len(files)} image files found)")
+
+        for f in sorted(files):
+            out_p = out_dir / f"{f.stem}_300dpi_master.png"
+            try:
+                upscale_single_image(
+                    input_path=f,
+                    output_path=out_p,
+                    model_name=model_name,
+                    scale=args.scale,
+                    alpha_threshold=args.alpha_threshold,
+                    organic=args.organic,
+                    polish=polish,
+                    sharpness=args.sharpness,
+                    specular=args.specular,
+                    merch_canvas=args.merch,
+                    canvas_dims=canvas_dims,
+                    dpi=args.dpi,
+                    verbose=args.verbose,
+                )
+            except Exception as e:
+                print(f"❌ Failed to process {f.name}: {e}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

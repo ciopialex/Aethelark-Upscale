@@ -1,0 +1,55 @@
+Aethelark Source-Available License v1.0
+
+Copyright (c) 2026 Alexandru Cioponea (Aethelark)
+Repository: https://github.com/ciopialex/Aethelark-Upscale
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, and distribute the Software for PERSONAL, EDUCATIONAL, and
+NON-COMMERCIAL purposes only, subject to the following conditions:
+
+1. ATTRIBUTION AND CREDIT REQUIRED (ANTI-CLONING CLAUSE)
+   All copies, forks, mirrors, redistributions, or derivative works of this
+   Software, whether in source code or binary form, must prominently and
+   permanently retain:
+   (a) This license and copyright notice in its entirety.
+   (b) Clear, visible attribution to the original creator:
+       "Aethelark-Upscale created by Alexandru Cioponea (Aethelark)"
+       with a direct clickable link to: https://github.com/ciopialex/Aethelark-Upscale
+   (c) An explicit notice stating any modifications or alterations made to
+       the original Software.
+   Cloning, mirroring, re-uploading, or redistributing this repository or its
+   code without explicitly mentioning Alexandru Cioponea and linking to the
+   original repository is strictly prohibited and constitutes copyright
+   infringement.
+
+2. NON-COMMERCIAL USE ONLY
+   The Software is free for personal, non-commercial use only.
+   You may NOT use the Software, in whole or in part, for any commercial
+   purpose — including but not limited to: selling, licensing, sublicensing,
+   offering as a paid API or hosted cloud SaaS service, bundling inside a
+   commercial product, or monetizing through direct or indirect payment —
+   without prior written permission and a separate commercial license from
+   the copyright holder.
+
+3. NO MISREPRESENTATION
+   You may not claim authorship or present this Software, or any derivative
+   thereof, as your own original work. You may not remove, obscure, or alter
+   any author credits, branding, or attribution notices.
+
+4. CONTRIBUTION ENCOURAGED
+   If you improve, fix, or optimize this Software, you are encouraged to
+   submit your changes back to the original repository via pull request so
+   the entire community and agent ecosystem can benefit.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+For commercial licensing, enterprise deployment, or custom integration:
+Contact: shennyonthebeat@gmail.com
+GitHub: https://github.com/ciopialex
