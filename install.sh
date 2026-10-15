@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Aethelark-Upscale Automated Installer
+# Aethelark-Upscale Automated Installer (Linux & macOS)
 # GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine
 # Created by Alexandru Cioponea (Aethelark)
 # https://github.com/ciopialex/Aethelark-Upscale
@@ -19,19 +19,31 @@ echo -e "${BOLD}${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║                  Aethelark-Upscale Installer                     ║"
 echo "║         GPU Image Super-Resolution & 300 DPI Print Engine        ║"
-echo "║                   Designed for AI Agents & Humans                ║"
+echo "║             Cross-Platform: Linux · macOS · Windows              ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
 echo -e "${RESET}"
 
 # 1. System checks
-echo -e "${BOLD}▶ Checking system prerequisites...${RESET}"
+echo -e "${BOLD}▶ Detecting operating system and architecture...${RESET}"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-if [[ "$OS" != "Linux" ]] || [[ "$ARCH" != "x86_64" ]]; then
-    echo -e "${RED}❌ Error: Aethelark-Upscale currently requires Linux x86_64.${RESET}"
-    exit 1
-fi
+case "$OS" in
+    Linux)
+        echo -e "  ↳ Detected OS: ${GREEN}Linux (${ARCH})${RESET}"
+        ESRGAN_ARCHIVE_URL="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip"
+        ;;
+    Darwin)
+        echo -e "  ↳ Detected OS: ${GREEN}macOS / Darwin (${ARCH})${RESET}"
+        ESRGAN_ARCHIVE_URL="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-macos.zip"
+        ;;
+    *)
+        echo -e "${RED}❌ Unsupported Unix OS: $OS.${RESET}"
+        echo -e "For Windows, please use the native PowerShell installer:"
+        echo -e "   irm https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.ps1 | iex"
+        exit 1
+        ;;
+esac
 
 if ! command -v python3 &>/dev/null; then
     echo -e "${RED}❌ Error: Python 3 is required. Please install python3.${RESET}"
@@ -63,13 +75,19 @@ mkdir -p "$INSTALL_DIR" "$MODELS_DIR" "$BIN_DIR"
 # 2. Download Real-ESRGAN Vulkan engine if missing
 ESRGAN_BIN="$INSTALL_DIR/realesrgan-ncnn-vulkan"
 if [[ ! -f "$ESRGAN_BIN" ]]; then
-    echo -e "${YELLOW}⚡ Downloading Real-ESRGAN Vulkan engine (MIT)...${RESET}"
+    echo -e "${YELLOW}⚡ Downloading Real-ESRGAN Vulkan engine (${OS})...${RESET}"
     TMP_ZIP="/tmp/realesrgan-vulkan.zip"
-    fetch "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip" "$TMP_ZIP"
+    fetch "$ESRGAN_ARCHIVE_URL" "$TMP_ZIP"
     
     python3 -c "import zipfile; zipfile.ZipFile('$TMP_ZIP').extractall('$INSTALL_DIR')"
     rm -f "$TMP_ZIP"
     chmod +x "$ESRGAN_BIN"
+
+    # macOS quarantine attribute removal
+    if [[ "$OS" == "Darwin" ]] && command -v xattr &>/dev/null; then
+        xattr -dr com.apple.quarantine "$INSTALL_DIR" 2>/dev/null || true
+    fi
+
     echo -e "${GREEN}✓ Real-ESRGAN engine installed successfully.${RESET}"
 else
     echo -e "${GREEN}✓ Real-ESRGAN engine already present.${RESET}"
@@ -133,7 +151,6 @@ TARGET_EXE="$BIN_DIR/aethelark-upscale"
 if [[ -f "$SCRIPT_DIR/aethelark-upscale" ]]; then
     cp "$SCRIPT_DIR/aethelark-upscale" "$TARGET_EXE"
 else
-    # Remote install fallback via curl
     fetch "https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/aethelark-upscale" "$TARGET_EXE"
 fi
 
@@ -151,7 +168,7 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
 fi
 
 echo -e "\n${GREEN}${BOLD}══════════════════════════════════════════════════════════════════${RESET}"
-echo -e "${GREEN}${BOLD}🎉 Aethelark-Upscale installed successfully!${RESET}"
+echo -e "${GREEN}${BOLD}🎉 Aethelark-Upscale installed successfully on ${OS}!${RESET}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════${RESET}"
 echo -e "Commands available:"
 echo -e "  • ${BOLD}aethelark-upscale${RESET} (canonical)"
@@ -161,8 +178,4 @@ echo ""
 echo -e "Quick test:"
 echo -e "  aethelark-upscale --help"
 echo -e "  aethelark-upscale my-image.png --organic"
-echo ""
-echo -e "Agent skill installation (Claude / Gemini):"
-echo -e "  cp -r skill/ ~/.claude/skills/aethelark-upscale/"
-echo -e "  cp -r skill/ ~/.gemini/config/skills/aethelark-upscale/"
 echo ""

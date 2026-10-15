@@ -1,12 +1,12 @@
 # 🦅 Aethelark-Upscale
 
 > **The Agent-Native 300 DPI GPU Image Super-Resolution & Print Polish Engine.**  
-> Free for personal use. Runs locally on NVIDIA GPUs via Vulkan.  
+> Free for personal use. Runs locally on Linux, macOS, and Windows via Vulkan GPU acceleration.  
 > Created by **Alexandru Cioponea (Aethelark)**.
 
 [![License: Aethelark Source-Available](https://img.shields.io/badge/License-Aethelark%20v1.0-blue.svg)](LICENSE)
-[![Platform: Linux x86_64](https://img.shields.io/badge/Platform-Linux%20x86__64-orange.svg)](#requirements)
-[![GPU: NVIDIA Vulkan](https://img.shields.io/badge/GPU-Vulkan%20Accelerated-green.svg)](#features)
+[![Platform: Linux · macOS · Windows](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-orange.svg)](#-cross-platform-support)
+[![GPU: Vulkan Hardware Accelerated](https://img.shields.io/badge/GPU-Vulkan%20Accelerated-green.svg)](#features)
 [![Print: 300 DPI DTG Ready](https://img.shields.io/badge/Print-300%20DPI%20DTG%20Ready-brightgreen.svg)](#preflight-engineering)
 [![Agent: Claude & Gemini Native](https://img.shields.io/badge/AI%20Agent-Claude%20%7C%20Gemini%20Native-purple.svg)](#-for-ai-agents)
 
@@ -14,7 +14,7 @@
 
 ## ⚡ What is Aethelark-Upscale?
 
-**Aethelark-Upscale** is a local GPU image upscaler built specifically for **autonomous AI agents** (Claude Code, Gemini CLI, Cursor, Copilot, OpenDevin) and **human creators**.
+**Aethelark-Upscale** is a high-performance, local image upscaler built specifically for **autonomous AI agents** (Claude Code, Gemini CLI, Cursor, Copilot, OpenDevin) and **human creators**.
 
 Most upscalers are either bloated GUI apps, locked behind paid API subscriptions, or produce synthetic "AI slop" (uncanny plastic textures, waxy skin, and squiggly GAN wave hallucinations on smooth surfaces).
 
@@ -32,34 +32,54 @@ Both modes automatically run through the **Aethelark Print Preflight Pipeline**:
 
 ## 🚀 One-Line Installation
 
-Run this single command in your terminal or agent shell:
+### Linux & macOS
+
+Run in terminal:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.sh | bash
 ```
 
-The installer will:
-1. Verify Linux x86_64 & Python 3.
-2. Download the high-performance Real-ESRGAN Vulkan engine.
+### Windows (PowerShell)
+
+Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ciopialex/Aethelark-Upscale/main/install.ps1 | iex
+```
+
+The installer will automatically:
+1. Detect your operating system (Linux, macOS Intel/Apple Silicon, or Windows).
+2. Download the appropriate Real-ESRGAN Vulkan engine binary.
 3. Fetch community neural weights (NMKD Superscale, UltraSharp, Siax, Nomos).
 4. Install minimal Python dependencies (`pillow`, `numpy`, `opencv-python-headless`).
-5. Drop `aethelark-upscale`, `brand-upscale`, and `merch-upscale` into `~/.local/bin/`.
+5. Add `aethelark-upscale`, `brand-upscale`, and `merch-upscale` to your system PATH.
+
+---
+
+## 💻 Cross-Platform Support
+
+| Platform | Architecture | Acceleration Backend |
+| :--- | :--- | :--- |
+| **Linux** | x86_64 | NVIDIA, AMD, or Intel GPU via native Vulkan |
+| **macOS** | Apple Silicon (M1/M2/M3/M4) & Intel | Apple Metal via MoltenVK & Vulkan runtime |
+| **Windows** | Windows 10 & 11 (x64) | NVIDIA, AMD, or Intel GPU via DirectX 12 / Vulkan |
 
 ---
 
 ## 🤖 For AI Agents
 
-Aethelark-Upscale was engineered from day one for AI agents to call inside automated coding and design pipelines.
+Aethelark-Upscale was engineered from day one for AI agents to call inside automated coding and design pipelines across any operating system.
 
 ### Drop-in Agent Skill (Claude Code & Gemini CLI / Antigravity)
 
 Clone the repo and copy the bundled `skill/` into your agent's directory:
 
 ```bash
-# For Claude Code:
+# For Claude Code (Linux / macOS / WSL):
 cp -r skill/ ~/.claude/skills/aethelark-upscale/
 
-# For Gemini CLI / Antigravity:
+# For Gemini CLI / Antigravity (Linux / macOS / WSL):
 cp -r skill/ ~/.gemini/config/skills/aethelark-upscale/
 ```
 
@@ -164,20 +184,12 @@ Optional Arguments:
 
 ---
 
-## 🛠️ Requirements
-
-- **Operating System**: Linux x86_64 (Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux)
-- **GPU**: NVIDIA, AMD, or Intel GPU with Vulkan driver support
-- **Python**: 3.10 or newer (`pillow`, `numpy`, `opencv-python-headless`)
-
----
-
 ## 📜 License & Anti-Cloning Notice
 
 This software is distributed under the **[Aethelark Source-Available License v1.0](LICENSE)**.
 
 ### Summary of Terms:
-- **✅ Free for Personal Use**: Anyone may use, study, and run this tool for personal, non-commercial, or educational projects.
+- **✅ Free for Personal Use**: Anyone may use, study, and run this tool for personal, non-commercial, or educational projects across Linux, macOS, and Windows.
 - **🚫 Mandatory Attribution**: Any fork, mirror, redistribution, or modification **MUST prominently credit Alexandru Cioponea (Aethelark)** and provide a direct link to this repository (`https://github.com/ciopialex/Aethelark-Upscale`). Cloning or re-uploading without mentioning Alexandru Cioponea is strictly prohibited.
 - **🚫 Non-Commercial Only**: You may NOT sell, monetize, bundle in paid apps, or offer this software as a paid cloud SaaS without prior written authorization.
 

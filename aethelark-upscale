@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
 """
 Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine
-Designed for AI Agents and Creators.
+Designed for AI Agents and Creators across Linux, macOS, and Windows.
 
 Copyright (c) 2026 Alexandru Cioponea (Aethelark)
 Licensed under the Aethelark Source-Available License v1.0
 https://github.com/ciopialex/Aethelark-Upscale
 
-Transforms raw AI generations, designs, and merchandise artwork into gallery-grade print masters:
-- Neural Super-Resolution via Vulkan GPU (NMKD, UltraSharp, Siax, Nomos, Anime, Real-ESRGAN)
-- Organic Optical Mode via Lanczos-4 (100% authentic photographic continuous tone, zero AI hallucinations)
-- True 300 DPI Physical Print Stamping (pHYs PNG chunk)
-- Alpha Halo Purge (eliminates white ink underbase ghost outlines on dark apparel)
-- Standardized sRGB IEC61966-2.1 Color Profile Embedding (RIP CMYK color-shift safe)
-- Universal Merch Master Canvas Centering (4500x5400 for Printify, Printful, Amazon Merch)
+Cross-Platform Support:
+- Linux (x86_64, Vulkan)
+- macOS (Intel & Apple Silicon via MoltenVK)
+- Windows (x64, DirectX/Vulkan)
 """
 
 import argparse
@@ -30,31 +27,41 @@ from PIL import Image, ImageCms
 
 
 def resolve_engine_paths():
-    """Locate the Real-ESRGAN Vulkan binary and models directory dynamically."""
+    """Locate the Real-ESRGAN binary and models directory dynamically across Linux, macOS, and Windows."""
+    is_windows = sys.platform.startswith("win")
+    bin_name = "realesrgan-ncnn-vulkan.exe" if is_windows else "realesrgan-ncnn-vulkan"
+
     custom_dir = os.environ.get("AETHELARK_ESRGAN_DIR")
     candidates = []
     if custom_dir:
         candidates.append(Path(custom_dir))
 
-    candidates.append(Path.home() / ".local/share/aethelark/realesrgan")
-    candidates.append(Path("/usr/local/share/aethelark/realesrgan"))
+    if is_windows:
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            candidates.append(Path(local_app_data) / "aethelark" / "realesrgan")
+        candidates.append(Path.home() / ".local" / "share" / "aethelark" / "realesrgan")
+    else:
+        candidates.append(Path.home() / ".local/share/aethelark/realesrgan")
+        candidates.append(Path.home() / "Library/Application Support/aethelark/realesrgan")
+        candidates.append(Path("/usr/local/share/aethelark/realesrgan"))
 
     for base in candidates:
-        bin_path = base / "realesrgan-ncnn-vulkan"
+        bin_path = base / bin_name
         models_path = base / "models"
         if bin_path.exists():
             return bin_path, models_path
 
-    which_bin = shutil.which("realesrgan-ncnn-vulkan")
+    which_bin = shutil.which(bin_name) or shutil.which("realesrgan-ncnn-vulkan")
     if which_bin:
         bin_p = Path(which_bin)
         models_p = bin_p.parent / "models"
         if models_p.exists():
             return bin_p, models_p
-        return bin_p, Path.home() / ".local/share/aethelark/realesrgan/models"
+        return bin_p, candidates[0] / "models" if candidates else Path.home() / "models"
 
-    default_base = Path.home() / ".local/share/aethelark/realesrgan"
-    return default_base / "realesrgan-ncnn-vulkan", default_base / "models"
+    default_base = candidates[0] if candidates else Path.home() / ".local/share/aethelark/realesrgan"
+    return default_base / bin_name, default_base / "models"
 
 
 REALESRGAN_BIN, MODELS_DIR = resolve_engine_paths()
@@ -221,7 +228,7 @@ def upscale_single_image(
     else:
         if not REALESRGAN_BIN.exists():
             print(f"  ⚠️ Neural binary not found at {REALESRGAN_BIN}.", file=sys.stderr)
-            print(f"     Run `bash install.sh` or use `--organic` mode.", file=sys.stderr)
+            print(f"     Run install script or use `--organic` mode.", file=sys.stderr)
             raise RuntimeError(f"Real-ESRGAN binary missing: {REALESRGAN_BIN}")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -237,7 +244,7 @@ def upscale_single_image(
                 "-f", "png",
             ]
 
-            print(f"\n  ⚡ Running Neural Super-Resolution ({model_name}) via Vulkan GPU...")
+            print(f"\n  ⚡ Running Neural Super-Resolution ({model_name}) via GPU/Vulkan...")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
             if not tmp_output.exists():
@@ -294,7 +301,7 @@ def upscale_single_image(
 def main():
     parser = argparse.ArgumentParser(
         prog="aethelark-upscale",
-        description="Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine",
+        description="Aethelark-Upscale: GPU-Accelerated Image Super-Resolution & 300 DPI Print Engine (Linux, macOS, Windows)",
         epilog="Created by Alexandru Cioponea (Aethelark) | https://github.com/ciopialex/Aethelark-Upscale"
     )
     parser.add_argument("input", help="Path to input image or directory")
