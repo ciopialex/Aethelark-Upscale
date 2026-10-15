@@ -368,6 +368,12 @@ def main():
         help="Place upscaled graphic centered onto universal standard 4500x5400 POD master canvas"
     )
     parser.add_argument(
+        "--in-place", "--replace",
+        dest="in_place",
+        action="store_true",
+        help="Overwrite original files directly in-place instead of creating new files or folders"
+    )
+    parser.add_argument(
         "--canvas",
         type=str,
         help="Custom canvas dimensions in WIDTHxHEIGHT format, e.g. 4500x5400"
@@ -409,7 +415,9 @@ def main():
         sys.exit(1)
 
     if input_path.is_file():
-        if args.output:
+        if args.in_place:
+            out_p = input_path
+        elif args.output:
             out_p = Path(args.output).expanduser().resolve()
             if out_p.is_dir() or args.output.endswith("/"):
                 out_p = out_p / f"{input_path.stem}_300dpi_master.png"
@@ -433,14 +441,15 @@ def main():
         )
     elif input_path.is_dir():
         out_dir = Path(args.output).expanduser().resolve() if args.output else input_path / "polished_300dpi_masters"
-        out_dir.mkdir(parents=True, exist_ok=True)
+        if not args.in_place:
+            out_dir.mkdir(parents=True, exist_ok=True)
 
         valid_exts = {".png", ".jpg", ".jpeg", ".webp"}
         files = []
         for f in sorted(input_path.iterdir()):
             if f.suffix.lower() not in valid_exts:
                 continue
-            if "_300dpi_master" in f.name or f.name.endswith("_upscaled.png"):
+            if not args.in_place and ("_300dpi_master" in f.name or f.name.endswith("_upscaled.png")):
                 continue
             try:
                 with Image.open(f) as img:
@@ -455,7 +464,7 @@ def main():
         print(f"Processing directory: {input_path} ({len(files)} images under {args.dpi} DPI found)")
 
         for f in sorted(files):
-            out_p = out_dir / f"{f.stem}_300dpi_master.png"
+            out_p = f if args.in_place else (out_dir / f"{f.stem}_300dpi_master.png")
             try:
                 upscale_single_image(
                     input_path=f,
